@@ -21,7 +21,7 @@ To test your connection, DropTrace contacts:
 - Your router.
 - Public servers at 1.1.1.1 (Cloudflare), 8.8.8.8 (Google), and 9.9.9.9 (Quad9), using pings
   and sometimes an encrypted connection test that sends no personal data.
-- Your configured DNS service, to look up www.microsoft.com, www.cloudflare.com, and dns.google.
+- Your configured DNS service, to look up www.microsoft.com, dns.google, and www.cloudflare.com.
 
 As with any internet connection, these services can see your public IP address and when the
 connection was made. Their own privacy policies apply.
