@@ -8,15 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
 // Version and DonateURL can be set when building, for example:
 // go build -ldflags "-X main.DonateURL=https://ko-fi.com/yourname"
 var (
-	Version   = "0.3.1"
+	Version   = "0.3.3"
 	DonateURL = ""
+	// ProStoreURL opens DropTrace Pro's Microsoft Store page.
+	ProStoreURL = "ms-windows-store://pdp/?ProductId=9PDG877VL6GP"
 )
 
 // PlatformUI is the app window and tray icon.
@@ -52,7 +53,11 @@ func main() {
 		showExistingInstance()
 		return
 	}
-	if f, err := os.OpenFile(filepath.Join(dir, "droptrace.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600); err == nil {
+	logPath := filepath.Join(dir, "droptrace.log")
+	if st, err := os.Stat(logPath); err == nil && st.Size() > 1<<20 {
+		_ = os.Remove(logPath) // start over instead of growing forever
+	}
+	if f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600); err == nil {
 		log.SetOutput(f)
 		defer f.Close()
 	}
@@ -67,7 +72,7 @@ func main() {
 	mon.onClose = func(o Outage) {
 		if store.NotifyEnabled() {
 			ui.Notify("Your connection is back",
-				fmt.Sprintf("Down for %s. Likely cause: %s.", formatDuration(o.Duration(time.Now())), strings.ToLower(CauseInfoFor(o.Cause).Label)))
+				fmt.Sprintf("Down for %s. Likely cause: %s.", formatDuration(o.Duration(time.Now())), causeInSentence(o.Cause)))
 		}
 	}
 	go runChecks(mon, NewChecker(newNetOps()), ui)

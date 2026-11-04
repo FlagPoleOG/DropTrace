@@ -10,12 +10,26 @@ import (
 type NetOps interface {
 	Route() (gateway string, ok bool)
 	Ping(ip string, timeout time.Duration) (bool, int)
+	LinkDown() bool
 	GatewayTCP(ctx context.Context, gateway string) bool
 	PublicTLS(ctx context.Context) (bool, int)
 	DNS(ctx context.Context) bool
 }
 
 var publicIPs = []string{"1.1.1.1", "8.8.8.8", "9.9.9.9"}
+
+const icmpTimedOut = 11010 // IP_REQ_TIMED_OUT
+
+// pingAnswerInvalid spots a "timed out" answer that came back far too soon. Windows
+// sometimes reports this within milliseconds, which can't be a real timeout, so it says
+// nothing about whether a packet was lost.
+func pingAnswerInvalid(code uintptr, took, wait time.Duration) bool {
+	limit := 100 * time.Millisecond
+	if wait/4 < limit {
+		limit = wait / 4
+	}
+	return code == icmpTimedOut && took < limit
+}
 
 const (
 	fullCheckEvery = 30 * time.Second
@@ -46,7 +60,7 @@ func (c *Checker) Check(ctx context.Context, now time.Time) Sample {
 	gw, ok := c.net.Route()
 	if !ok {
 		c.lastFull, c.failing = time.Time{}, true
-		return Sample{GatewayMs: -1, LatencyMs: -1}
+		return Sample{GatewayMs: -1, LatencyMs: -1, LinkDown: c.net.LinkDown()}
 	}
 	since := now.Sub(c.lastFull)
 	full := c.lastFull.IsZero() || c.failing || gw != c.gateway || since >= fullCheckEvery || since < 0

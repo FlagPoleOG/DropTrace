@@ -23,6 +23,7 @@ type Outage struct {
 	CauseSeconds map[Cause]float64 `json:"causeSeconds,omitempty"`
 	Gateway      string            `json:"gateway,omitempty"`
 	Note         string            `json:"note,omitempty"`
+	LinkLost     bool              `json:"linkLost,omitempty"`
 }
 
 // Duration returns the outage length, measured to now if it's still open.
@@ -91,6 +92,11 @@ func OpenStore(dir string) (*Store, error) {
 }
 
 func primaryCause(o *Outage) Cause {
+	// After a cable comes back, the router takes a while to answer again. That wait is part
+	// of the same event, and on a short unplug it can last longer than the unplug itself.
+	if o.LinkLost {
+		return CausePC
+	}
 	best, bestSecs := o.Cause, -1.0
 	// Fixed order keeps ties from changing between runs.
 	for _, c := range []Cause{o.Cause, CauseISP, CauseRouter, CausePC, CauseDNS, CauseUnclear} {
@@ -178,6 +184,13 @@ func (s *Store) AddCauseTime(o *Outage, c Cause, d time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o.CauseSeconds[c] += d.Seconds()
+}
+
+// MarkLinkLost records that this PC's network adapter lost its link during an outage.
+func (s *Store) MarkLinkLost(o *Outage) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o.LinkLost = true
 }
 
 // TouchOutage updates when an open outage was last seen.

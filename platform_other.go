@@ -32,6 +32,7 @@ type noNet struct{}
 func newNetOps() NetOps                               { return noNet{} }
 func (noNet) Route() (string, bool)                   { return "", false }
 func (noNet) Ping(string, time.Duration) (bool, int)  { return false, 0 }
+func (noNet) LinkDown() bool                          { return false }
 func (noNet) GatewayTCP(context.Context, string) bool { return false }
 func (noNet) PublicTLS(context.Context) (bool, int)   { return false, 0 }
 func (noNet) DNS(context.Context) bool                { return false }

@@ -199,6 +199,7 @@ const (
 	idDonateReport                         = 223
 	idAuto, idNotify, idDelete, idExit     = 301, 302, 303, 304
 	idDonateSettings                       = 305
+	idProStore                             = 307
 	idStartupSettings                      = 306
 	idEditName, idEditProvider, idEditAcct = 401, 402, 403
 	idList                                 = 501
@@ -689,6 +690,7 @@ func (u *winUI) applyListTheme() {
 	send(u.list, lvmSetTextColor, 0, colorRef(t.ink))
 }
 
+//go:uintptrescapes
 func send(h uintptr, msg uint32, w, l uintptr) uintptr {
 	r, _, _ := procSendMessageW.Call(h, uintptr(msg), w, l)
 	return r
@@ -830,6 +832,7 @@ func (u *winUI) createControls() {
 	u.addButton(idNotify, kindCheck, viewSettings, "Notify me when an outage ends")
 	u.addButton(idDelete, kindDanger, viewSettings, "Delete history")
 	u.addButton(idExit, kindSecondary, viewSettings, "Exit DropTrace")
+	u.addButton(idProStore, kindSecondary, viewSettings, "See DropTrace Pro")
 	if strings.HasPrefix(DonateURL, "https://") {
 		u.addButton(idDonateReport, kindSecondary, viewReport, "Support on Ko-fi")
 		u.addButton(idDonateSettings, kindSecondary, viewSettings, "Support on Ko-fi")
@@ -1014,7 +1017,10 @@ func (u *winUI) layout() {
 		lb(viewSettings, u.setMsg, u.fBody, &u.theme.down, winRect{m, y, right, y + u.S(44)}, dtWordBreak|dtNoPrefix)
 		y += u.S(48)
 	}
-	y += u.S(6)
+	lb(viewSettings, "Need more detail? DropTrace Pro adds packet loss and jitter tracking, problem patterns, and Wi-Fi and route tools.", u.fSmall, &u.theme.muted, winRect{m, y, right, y + u.S(34)}, dtWordBreak|dtNoPrefix)
+	y += u.S(36)
+	u.move(idProStore, winRect{m, y, m + u.S(170), y + u.S(34)})
+	y += u.S(44)
 	lb(viewSettings, "Closing this window keeps DropTrace logging in the tray. Choose Exit DropTrace to stop it.\n\nYour history stays on this PC. DropTrace checks your router, 1.1.1.1, 8.8.8.8 and 9.9.9.9, and looks up three website names, but sends none of your data anywhere.\n\n"+historyLine()+"Version "+Version,
 		u.fSmall, &u.theme.muted, winRect{m, y, right, u.height - u.S(10)}, dtWordBreak|dtNoPrefix)
 }
@@ -2048,6 +2054,8 @@ func (u *winUI) onCommand(id int) {
 		u.saveCSV()
 	case idDonateReport, idDonateSettings:
 		shellOpen(DonateURL)
+	case idProStore:
+		shellOpen(ProStoreURL)
 	case idStartupSettings:
 		shellOpen("ms-settings:startupapps")
 	case idAuto:

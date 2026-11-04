@@ -1,6 +1,6 @@
 # DropTrace privacy policy
 
-Last updated: November 2, 2026
+Last updated: November 3, 2026
 
 DropTrace is built to work without collecting your data. It has no account, ads, analytics,
 or telemetry, and Second Shift Software doesn't receive anything from the app.
@@ -29,6 +29,8 @@ connection was made. Their own privacy policies apply.
 ## Links
 
 **Support on Ko-fi** opens Ko-fi in your browser. Ko-fi's privacy policy applies there.
+
+**See DropTrace Pro** opens its page in the Microsoft Store. Microsoft's privacy policy applies there.
 
 ## Contact
 

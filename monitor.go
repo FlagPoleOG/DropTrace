@@ -2,6 +2,7 @@ package main
 
 import (
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -41,7 +42,8 @@ type Sample struct {
 	GatewayMs  int // -1 when this check didn't time the router
 	InternetUp bool
 	DNSUp      bool
-	LatencyMs  int // -1 when this check didn't time the internet
+	LinkDown   bool // the route's adapter lost its link
+	LatencyMs  int  // -1 when this check didn't time the internet
 }
 
 // CheckPoint is one check on the live graph.
@@ -92,20 +94,21 @@ type Hop struct {
 
 // Monitor turns samples into outages.
 type Monitor struct {
-	mu         sync.Mutex
-	store      *Store
-	last       time.Time
-	graceUntil time.Time
-	failRun    int
-	firstFail  time.Time
-	firstCause Cause
-	okRun      int
-	firstOK    time.Time
-	open       *Outage
-	sample     Sample
-	cause      Cause
-	onClose    func(Outage)
-	recent     []CheckPoint
+	sawLinkDown bool
+	mu          sync.Mutex
+	store       *Store
+	last        time.Time
+	graceUntil  time.Time
+	failRun     int
+	firstFail   time.Time
+	firstCause  Cause
+	okRun       int
+	firstOK     time.Time
+	open        *Outage
+	sample      Sample
+	cause       Cause
+	onClose     func(Outage)
+	recent      []CheckPoint
 }
 
 // NewMonitor creates a monitor that stores outages in store.
@@ -137,6 +140,12 @@ func (m *Monitor) Step(s Sample) Status {
 		} else {
 			delta = gap
 			m.store.AddMonitored(m.last, gap)
+		}
+	}
+	if s.LinkDown {
+		m.sawLinkDown = true
+		if m.open != nil {
+			m.store.MarkLinkLost(m.open)
 		}
 	}
 	m.last = now
@@ -179,11 +188,15 @@ func (m *Monitor) Step(s Sample) Status {
 					Cause:        m.firstCause,
 					Gateway:      s.Gateway,
 					CauseSeconds: map[Cause]float64{m.firstCause: now.Sub(m.firstFail).Seconds()},
+					LinkLost:     m.sawLinkDown,
 				}
 				m.store.AddOutage(m.open)
 				m.failRun = 0
 			}
 		}
+	}
+	if m.open == nil && m.failRun == 0 {
+		m.sawLinkDown = false
 	}
 	st := m.statusLocked()
 	onClose := m.onClose
@@ -336,4 +349,13 @@ func CauseInfoFor(c Cause) CauseInfo {
 		return CauseInfo{"Router or provider (unclear)", "Your internet is down, but the cause is unclear.", "Neither the router nor the internet answered, and this router has never answered checks."}
 	}
 	return CauseInfo{Label: "None"}
+}
+
+// causeInSentence returns a cause's label for use mid-sentence, keeping names like PC and DNS.
+func causeInSentence(c Cause) string {
+	label := CauseInfoFor(c).Label
+	if len(label) > 1 && label[1] >= 'a' && label[1] <= 'z' {
+		return strings.ToLower(label[:1]) + label[1:]
+	}
+	return label
 }

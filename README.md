@@ -10,9 +10,13 @@ likely happened, and saves a PDF report you can send to your internet provider.
 
 If DropTrace helps you, you can [support it on Ko-fi](https://ko-fi.com/flagpoleog).
 
+Need more detail? [DropTrace Pro](https://apps.microsoft.com/detail/9PDG877VL6GP) is the paid version. It adds packet loss and jitter tracking, problem patterns, and Wi-Fi and route tools.
+
 ## Install
 
-Download `DropTrace.exe` from the [Releases page](https://github.com/FlagPoleOG/DropTrace/releases) and run it. It doesn't need an installer
+Get [DropTrace from the Microsoft Store](https://apps.microsoft.com/detail/9P0S0B1RCX70).
+
+You can also download `DropTrace.exe` from the [Releases page](https://github.com/FlagPoleOG/DropTrace/releases) and run it. It doesn't need an installer
 or administrator rights. Windows may show a SmartScreen warning because direct downloads
 aren't signed. To continue, choose **More info**, then **Run anyway**.
 

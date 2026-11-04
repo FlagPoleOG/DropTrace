@@ -31,6 +31,11 @@ var dnsNames = [3]string{"www.microsoft.com", "www.cloudflare.com", "dns.google"
 // Route asks Windows which router it would use to reach the internet.
 func (*winNet) Route() (string, bool) { return bestGateway() }
 
+var linkDownNow atomic.Bool
+
+// LinkDown reports whether the last route check found its adapter disconnected.
+func (*winNet) LinkDown() bool { return linkDownNow.Load() }
+
 // Ping sends one echo request.
 func (*winNet) Ping(ip string, timeout time.Duration) (bool, int) { return ping(ip, timeout) }
 
@@ -56,12 +61,15 @@ func bestGateway() (string, bool) {
 	dest := binary.LittleEndian.Uint32(net.IPv4(8, 8, 8, 8).To4())
 	r, _, _ := procGetBestRoute.Call(uintptr(dest), 0, uintptr(unsafe.Pointer(&row[0])))
 	if r != 0 {
+		linkDownNow.Store(false)
 		return "", false
 	}
 	if !interfaceConnected(row[4]) {
 		// Windows can keep a route for a while after a cable is unplugged.
+		linkDownNow.Store(true)
 		return "", false
 	}
+	linkDownNow.Store(false)
 	if row[3] == 0 { // no next hop: directly connected, such as some VPNs
 		return "", true
 	}
@@ -93,28 +101,58 @@ func interfaceConnected(index uint32) bool {
 
 // ping uses the Windows ICMP API, which doesn't need administrator rights.
 func ping(ip string, timeout time.Duration) (bool, int) {
+	ok, ms, invalid := pingOnce(ip, timeout)
+	if !invalid {
+		return ok, ms
+	}
+	// Try again on another thread, since the false timeouts seem tied to the running thread.
+	for i := 0; i < 2; i++ {
+		time.Sleep(20 * time.Millisecond)
+		type result struct {
+			ok      bool
+			ms      int
+			invalid bool
+		}
+		done := make(chan result, 1)
+		go func() {
+			ok, ms, invalid := pingOnce(ip, timeout)
+			done <- result{ok, ms, invalid}
+		}()
+		if r := <-done; !r.invalid {
+			return r.ok, r.ms
+		}
+	}
+	return false, 0
+}
+
+func pingOnce(ip string, timeout time.Duration) (ok bool, ms int, invalid bool) {
 	v4 := net.ParseIP(ip).To4()
 	if v4 == nil {
-		return false, 0
+		return false, 0, false
 	}
 	h, _, _ := procIcmpCreateFile.Call()
 	if h == 0 || h == ^uintptr(0) {
-		return false, 0
+		return false, 0, false
 	}
 	defer procIcmpCloseHandle.Call(h)
 	payload := []byte("droptrace")
 	reply := make([]byte, 128)
-	n, _, _ := procIcmpSendEcho.Call(h, uintptr(binary.LittleEndian.Uint32(v4)),
+	started := time.Now()
+	n, _, sendErr := procIcmpSendEcho.Call(h, uintptr(binary.LittleEndian.Uint32(v4)),
 		uintptr(unsafe.Pointer(&payload[0])), uintptr(len(payload)), 0,
 		uintptr(unsafe.Pointer(&reply[0])), uintptr(len(reply)), uintptr(timeout.Milliseconds()))
 	if n == 0 {
-		return false, 0
+		code := uintptr(0)
+		if e, isErrno := sendErr.(syscall.Errno); isErrno {
+			code = uintptr(e)
+		}
+		return false, 0, pingAnswerInvalid(code, time.Since(started), timeout)
 	}
 	// ICMP_ECHO_REPLY: Address (0), Status (4), RoundTripTime (8)
 	if binary.LittleEndian.Uint32(reply[4:8]) != 0 {
-		return false, 0
+		return false, 0, false
 	}
-	return true, int(binary.LittleEndian.Uint32(reply[8:12]))
+	return true, int(binary.LittleEndian.Uint32(reply[8:12])), false
 }
 
 // PublicTLS needs a finished handshake. A plain TCP connection isn't enough, because

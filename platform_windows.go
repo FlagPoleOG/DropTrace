@@ -122,8 +122,16 @@ var instanceMutex uintptr // held for the life of the process
 func acquireSingleInstance() bool {
 	name, _ := syscall.UTF16PtrFromString(`Local\DropTraceSingleInstance`)
 	h, _, err := procCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(name)))
+	if errors.Is(err, syscall.ERROR_ALREADY_EXISTS) {
+		// Let go, or this copy's own handle would keep the lock alive after the other
+		// copy closes, and retrying could never succeed.
+		if h != 0 {
+			_ = syscall.CloseHandle(syscall.Handle(h))
+		}
+		return false
+	}
 	instanceMutex = h
-	return !errors.Is(err, syscall.ERROR_ALREADY_EXISTS)
+	return true
 }
 
 func fatal(msg string) {

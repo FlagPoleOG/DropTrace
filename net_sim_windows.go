@@ -19,6 +19,7 @@ func newNetOps() NetOps { return simNet{} }
 
 type simState struct {
 	Route, Gateway, Internet, DNS bool
+	LinkDown                      bool
 	Ms                            int
 }
 
@@ -38,6 +39,7 @@ func (simNet) Ping(ip string, _ time.Duration) (bool, int) {
 	}
 	return s.Internet, s.Ms + int(time.Now().UnixNano()/1e6%17)
 }
+func (simNet) LinkDown() bool                          { return readSim().LinkDown }
 func (simNet) GatewayTCP(context.Context, string) bool { return false }
 func (simNet) PublicTLS(context.Context) (bool, int)   { return false, -1 }
 func (simNet) DNS(context.Context) bool                { return readSim().DNS }

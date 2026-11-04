@@ -296,6 +296,7 @@ func (f *fakeNet) Ping(ip string, _ time.Duration) (bool, int) {
 	}
 	return f.pub, 20
 }
+func (f *fakeNet) LinkDown() bool                          { return false }
 func (f *fakeNet) GatewayTCP(context.Context, string) bool { return false }
 func (f *fakeNet) PublicTLS(context.Context) (bool, int) {
 	f.mu.Lock()
@@ -427,5 +428,73 @@ func TestMigrateOldData(t *testing.T) {
 	}
 	if raw, _ := os.ReadFile(filepath.Join(newDir, "history.json")); string(raw) != "{}" {
 		t.Fatal("existing history was overwritten")
+	}
+}
+
+func TestPingAnswerInvalid(t *testing.T) {
+	wait := 900 * time.Millisecond
+	if !pingAnswerInvalid(icmpTimedOut, 5*time.Millisecond, wait) {
+		t.Fatal("instant timeout should be invalid")
+	}
+	if pingAnswerInvalid(icmpTimedOut, wait, wait) {
+		t.Fatal("real timeout should count")
+	}
+	if pingAnswerInvalid(11003, time.Millisecond, wait) {
+		t.Fatal("other errors should count")
+	}
+}
+
+func TestShortUnplugBlamesThisPC(t *testing.T) {
+	st, _ := OpenStore(t.TempDir())
+	m := NewMonitor(st)
+	now := time.Now()
+	step := func(s Sample) {
+		s.Time = now
+		s.GatewayMs, s.LatencyMs = -1, -1
+		m.Step(s)
+		now = now.Add(2 * time.Second)
+	}
+	good := Sample{HasRoute: true, Gateway: "192.168.1.1", GatewayUp: true, InternetUp: true, DNSUp: true}
+	m.graceUntil = now
+	for i := 0; i < 3; i++ {
+		step(good)
+	}
+	m.graceUntil = now
+	// The cable is out briefly, then the router takes longer than that to answer.
+	for i := 0; i < 3; i++ {
+		step(Sample{LinkDown: true})
+	}
+	for i := 0; i < 15; i++ {
+		step(Sample{HasRoute: true, Gateway: "192.168.1.1"})
+	}
+	for i := 0; i < 5; i++ {
+		step(good)
+	}
+	all := st.Outages(now.Add(-time.Hour))
+	if len(all) != 1 || all[0].End == nil {
+		t.Fatalf("outages: %+v", all)
+	}
+	if all[0].Cause != CausePC {
+		t.Fatalf("cause %s, seconds %v", all[0].Cause, all[0].CauseSeconds)
+	}
+}
+
+func TestRouterOutageWithoutLinkLossStaysRouter(t *testing.T) {
+	o := &Outage{Cause: CausePC, CauseSeconds: map[Cause]float64{CausePC: 3, CauseRouter: 30}}
+	if primaryCause(o) != CauseRouter {
+		t.Fatal(primaryCause(o))
+	}
+	o.LinkLost = true
+	if primaryCause(o) != CausePC {
+		t.Fatal(primaryCause(o))
+	}
+}
+
+func TestCauseInSentenceKeepsNames(t *testing.T) {
+	if got := causeInSentence(CausePC); !strings.Contains(got, "PC") || !strings.HasPrefix(got, "this") {
+		t.Fatal(got)
+	}
+	if got := causeInSentence(CauseISP); got[0] < 'a' || got[0] > 'z' {
+		t.Fatal(got)
 	}
 }
