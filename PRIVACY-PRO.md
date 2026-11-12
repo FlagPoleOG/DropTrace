@@ -1,6 +1,6 @@
 # DropTrace Pro privacy policy
 
-Last updated: November 3, 2026
+Last updated: November 12, 2026
 
 DropTrace Pro has no account, ads, analytics, or telemetry. Second Shift Software doesn't receive anything from the app, and the app never sends your history anywhere on its own.
 
@@ -51,6 +51,8 @@ Windows treats Wi-Fi details as location information because they can reveal whe
 ## Links
 
 **Support on Ko-fi** opens Ko-fi in your browser, and the **Read M-Lab's privacy policy** button opens M-Lab's site. Those sites' privacy policies apply. Tips are optional and don't unlock anything.
+
+**Send feedback** opens a form on the Second Shift Software website in your browser. The form is a Google Form, so Google's privacy policy applies to what you type there. DropTrace Pro doesn't send anything with it. **More from Second Shift** opens the same website.
 
 ## Contact
 
