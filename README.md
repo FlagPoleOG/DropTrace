@@ -10,7 +10,7 @@ likely happened, and saves a PDF report you can send to your internet provider.
 
 If DropTrace helps you, you can [support it on Ko-fi](https://ko-fi.com/flagpoleog).
 
-DropTrace is made by [Second Shift Software](https://flagpoleog.github.io), along with HitchTrace and FolderTrace (coming soon).
+DropTrace is made by [Second Shift Software](https://flagpoleog.github.io), along with [FolderTrace](https://apps.microsoft.com/detail/9NG4J9PKM2WC) and HitchTrace (coming soon).
 
 Need more detail? [DropTrace Pro](https://apps.microsoft.com/detail/9PDG877VL6GP) is the paid version. It adds packet loss and jitter tracking, problem patterns, and Wi-Fi and route tools.
 
