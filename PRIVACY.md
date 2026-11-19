@@ -1,6 +1,6 @@
 # DropTrace privacy policy
 
-Last updated: November 12, 2026
+Last updated: November 18, 2026
 
 DropTrace is built to work without collecting your data. It has no account, ads, analytics,
 or telemetry, and Second Shift Software doesn't receive anything from the app.
@@ -21,7 +21,7 @@ To test your connection, DropTrace contacts:
 - Your router.
 - Public servers at 1.1.1.1 (Cloudflare), 8.8.8.8 (Google), and 9.9.9.9 (Quad9), using pings
   and sometimes an encrypted connection test that sends no personal data.
-- Your configured DNS service, to look up www.microsoft.com, dns.google, and www.cloudflare.com.
+- Your configured DNS service, to look up www.microsoft.com, www.cloudflare.com, and dns.google.
 
 As with any internet connection, these services can see your public IP address and when the
 connection was made. Their own privacy policies apply.
@@ -38,4 +38,4 @@ anything with it. **More from Second Shift** opens the same website.
 
 ## Contact
 
-Questions: [open an issue on GitHub](https://github.com/FlagPoleOG/DropTrace/issues).
+Questions: email [support@secondshift.software](mailto:support@secondshift.software) or [open an issue on GitHub](https://github.com/FlagPoleOG/DropTrace/issues).

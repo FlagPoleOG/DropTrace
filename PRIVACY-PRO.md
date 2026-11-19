@@ -1,6 +1,6 @@
 # DropTrace Pro privacy policy
 
-Last updated: November 12, 2026
+Last updated: November 18, 2026
 
 DropTrace Pro has no account, ads, analytics, or telemetry. Second Shift Software doesn't receive anything from the app, and the app never sends your history anywhere on its own.
 
@@ -56,4 +56,4 @@ Windows treats Wi-Fi details as location information because they can reveal whe
 
 ## Contact
 
-Questions: [open an issue on GitHub](https://github.com/FlagPoleOG/DropTrace/issues).
+Questions: email [support@secondshift.software](mailto:support@secondshift.software) or [open an issue on GitHub](https://github.com/FlagPoleOG/DropTrace/issues).
